@@ -2,42 +2,51 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
-	cep "github.com/itpaulin/busca-cep-go/cep"
+	cep_off "github.com/itpaulin/go-expert/cep_off"
 )
 
 func Web() {
-	http.HandleFunc("/")
-	http.HandleFunc("/cep", BuscaCep())
+	http.HandleFunc("/", BuscaCepHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
-func RouteBuscaCep(w http.ResponseWriter, r *http.Request) {
-	// w.Write([]byte("Hello World!"))
+func BuscaCepHandler(w http.ResponseWriter, r *http.Request) {
 	cepStr := r.URL.Query().Get("cep")
 	if cepStr == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	BuscaCep(cepStr)
+	c, err := BuscaCep(cepStr)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 
+	json.NewEncoder(w).Encode(c)
 }
-func BuscaCep(cepReq string) (*cep.CepResponse, error) {
+func BuscaCep(cepReq string) (*cep_off.CepResponse, error) {
 	res, err := http.Get("https://viacep.com.br/ws/" + cepReq + "/json/")
 	if err != nil {
 		return nil, err
 	}
-	body, err := io.ReadAll(res.Body)
-	if res != nil {
-		return nil, err
+
+	if res == nil {
+		return nil, fmt.Errorf("failed to get response")
 	}
 
 	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
 
-	var c cep.CepResponse
+	var c cep_off.CepResponse
 	err = json.Unmarshal(body, &c)
 	if err != nil {
 		return nil, err

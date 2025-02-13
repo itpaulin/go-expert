@@ -1,6 +1,6 @@
 package main
 
-import "github.com/itpaulin/busca-cep-go/web"
+import "github.com/itpaulin/go-expert/web"
 
 func main() {
 	web.Web()
