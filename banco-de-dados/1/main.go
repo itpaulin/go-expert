@@ -43,6 +43,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = deleteProduct(db, "e50fab82-fdaf-49cd-ab10-fbeaeb91a8d5")
 	products, err := getAllProducts(db)
 
 	for _, p := range products {
@@ -92,7 +93,7 @@ func getProduct(db *sql.DB, id string) (*Product, error) {
 }
 
 func getAllProducts(db *sql.DB) ([]Product, error) {
-	rows, err := db.Query("SELECT id, name, price FROM products")
+	rows, err := db.Query("SELECT id, name, price FROM products") // doesn't need to prepare statement
 	if err != nil {
 		return nil, err
 	}
@@ -107,4 +108,17 @@ func getAllProducts(db *sql.DB) ([]Product, error) {
 		products = append(products, p)
 	}
 	return products, nil
+}
+
+func deleteProduct(db *sql.DB, id string) error {
+	stmt, err := db.Prepare("DELETE FROM products WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
